@@ -1,0 +1,5 @@
+﻿basedosdados
+boto3
+pandas
+pyarrow
+python-dotenv
