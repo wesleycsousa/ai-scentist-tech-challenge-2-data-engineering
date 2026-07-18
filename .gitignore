@@ -4,3 +4,5 @@ pipeline/data/tmp/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
+*.pem

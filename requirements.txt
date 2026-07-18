@@ -3,3 +3,4 @@ boto3
 pandas
 pyarrow
 python-dotenv
+kafka-python
