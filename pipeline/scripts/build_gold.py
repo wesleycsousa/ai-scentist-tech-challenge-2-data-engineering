@@ -78,16 +78,20 @@ def construir_indicador_por_municipio():
     logger.info("=== Construindo GOLD: indicador_por_municipio ===")
     df = ler_silver_completa("municipio")
 
-    # rede="0" = agregado "Total" - decisao ja tomada na exploracao,
-    # evita somar as redes puras manualmente (risco de dupla contagem)
-    df_total = df[df["rede"] == "0"].copy()
+    # rede="5" = "Publica (Estadual e Municipal)" - escolhido apos checar
+    # os dados reais: rede="0" (Total) esta praticamente vazio nos dois anos
+    # (0 linhas em 2023, quase nulo em 2024). rede="5" e o agregado mais
+    # completo e consistente disponivel (4.950 municipios em 2023, 5.516 em
+    # 2024) - tambem faz sentido de dominio, ja que a politica publica em
+    # questao foca na rede publica de ensino
+    df_rede_publica = df[df["rede"] == "5"].copy()
 
     colunas_finais = [
         "ano", "id_municipio", "nome", "sigla_uf", "nome_uf", "nome_regiao",
         "taxa_alfabetizacao", "media_portugues",
         "proporcao_aluno_nivel_0", "proporcao_aluno_nivel_4", "proporcao_aluno_nivel_8",
     ]
-    df_gold = df_total[colunas_finais].reset_index(drop=True)
+    df_gold = df_rede_publica[colunas_finais].reset_index(drop=True)
     logger.info(f"indicador_por_municipio: {len(df_gold)} linhas")
     return df_gold
 
@@ -106,25 +110,25 @@ def validar_indicador_por_municipio(df):
 def construir_evolucao_temporal():
     logger.info("=== Construindo GOLD: evolucao_temporal ===")
 
-    # prepara UF: marca o nivel geografico e padroniza nomes de coluna
+    # rede="5" (Publica) - mesma decisao e mesmo motivo da funcao acima,
+    # validado tanto em uf quanto em municipio antes de aplicar aqui
     df_uf = ler_silver_completa("uf")
-    df_uf_total = df_uf[df_uf["rede"] == "0"].copy()
-    df_uf_total["nivel_geografico"] = "uf"
-    df_uf_total["local_id"] = df_uf_total["sigla_uf"]
-    df_uf_total["local_nome"] = df_uf_total["nome"]
+    df_uf_rede_publica = df_uf[df_uf["rede"] == "5"].copy()
+    df_uf_rede_publica["nivel_geografico"] = "uf"
+    df_uf_rede_publica["local_id"] = df_uf_rede_publica["sigla_uf"]
+    df_uf_rede_publica["local_nome"] = df_uf_rede_publica["nome"]
 
-    # mesma coisa pra municipio
     df_municipio = ler_silver_completa("municipio")
-    df_municipio_total = df_municipio[df_municipio["rede"] == "0"].copy()
-    df_municipio_total["nivel_geografico"] = "municipio"
-    df_municipio_total["local_id"] = df_municipio_total["id_municipio"]
-    df_municipio_total["local_nome"] = df_municipio_total["nome"]
+    df_municipio_rede_publica = df_municipio[df_municipio["rede"] == "5"].copy()
+    df_municipio_rede_publica["nivel_geografico"] = "municipio"
+    df_municipio_rede_publica["local_id"] = df_municipio_rede_publica["id_municipio"]
+    df_municipio_rede_publica["local_nome"] = df_municipio_rede_publica["nome"]
 
     # empilha as duas (uf embaixo de municipio), so as colunas em comum
     colunas_comuns = ["nivel_geografico", "local_id", "local_nome", "ano", "taxa_alfabetizacao"]
     df_unificado = pd.concat([
-        df_uf_total[colunas_comuns],
-        df_municipio_total[colunas_comuns],
+        df_uf_rede_publica[colunas_comuns],
+        df_municipio_rede_publica[colunas_comuns],
     ], ignore_index=True)
 
     # calcula a variacao ano a ano, por local (shift = "olha a linha anterior")
@@ -160,7 +164,7 @@ def _melt_metas(df, nivel_geografico, col_id=None, col_nome=None):
     if col_nome:
         id_vars.append(col_nome)
 
-    # melt = o "despachate" de colunas pra linhas
+    # melt = o "despachante" de colunas pra linhas
     df_long = df.melt(
         id_vars=id_vars,
         value_vars=meta_cols,
@@ -190,7 +194,8 @@ def _melt_metas(df, nivel_geografico, col_id=None, col_nome=None):
 def construir_metas_vs_resultados():
     logger.info("=== Construindo GOLD: metas_vs_resultados ===")
 
-    # aplica o melt nas 3 fontes (brasil, uf, municipio) e empilha tudo
+    # nota: meta_alfabetizacao_* nao tem coluna "rede" - ja vem consolidada
+    # na fonte, entao aqui nao ha filtro de rede pra aplicar
     df_brasil = ler_silver_completa("meta_alfabetizacao_brasil")
     long_brasil = _melt_metas(df_brasil, "brasil")
 
