@@ -8,3 +8,4 @@ __pycache__/
 *.pem
 
 pipeline/scripts/exploracao_local.py
+pipeline/scripts/exploracao_dados.ipynb
