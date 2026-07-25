@@ -56,7 +56,6 @@ projeto especificamente.
 **Forecast da AWS para o mês completo:** $6,07 — projeção baseada no ritmo
 de gasto observado nos primeiros 24 dias.
 
-![Comparativo de custo Junho vs Julho no Cost Explorer](imagens/cost-explorer-comparativo-jun-jul.png)
 
 ---
 
@@ -154,11 +153,16 @@ de um serviço always-on gerenciado como Amazon MSK.
 
 ## 9. Alerta de Billing Configurado
 
-Como medida preventiva complementar à investigação reativa de custo (Seção 3),
-a conta possui um **AWS Budget** ativo, que sinalizou automaticamente o
-estouro do limite definido ("1 over budget") junto com uma detecção de
-anomalia de custo ("1 cost anomaly detected", impacto de $0,05 nos últimos
-90 dias) — evidenciando que o monitoramento de custo não é apenas
-documentado teoricamente, mas está ativo e funcionando na conta real.
+Como medida preventiva complementar a investigacao reativa de custo (Secao 3),
+foi configurado manualmente um **AWS Budget**, com limite de gasto mensal
+definido, para notificar automaticamente caso o custo ultrapasse o esperado.
+Esse budget ja sinalizou o estouro do limite ("1 over budget") durante o
+proprio desenvolvimento do projeto, junto com uma deteccao de anomalia de
+custo do AWS Cost Anomaly Detection ("1 cost anomaly detected", impacto de
+$0,05 nos ultimos 90 dias) - evidenciando que o monitoramento de custo nao e
+apenas documentado teoricamente, mas foi configurado proativamente e
+funcionou na pratica, alertando sobre o problema real identificado na Secao 3
+antes mesmo do fechamento do ciclo de cobranca.
+
 
 ![Alerta de billing e anomalia de custo detectados](imagens/billing-alarm-configurado.png)
