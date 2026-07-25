@@ -1,0 +1,7 @@
+camada,prefixo,qtd_arquivos,tamanho_mb,ultima_execucao,status
+Bronze (principal),bronze/br_inep_avaliacao_alfabetizacao/,10,63.64,2026-07-12 16:05:50+00:00,ATENCAO - sem execucao ha 12 dias
+Bronze (diretorios),bronze/br_bd_diretorios_brasil/,2,0.49,2026-07-12 16:05:56+00:00,ATENCAO - sem execucao ha 12 dias
+Bronze (enriquecimento),bronze/br_inep_censo_escolar/,1,2.14,2026-07-18 20:08:15+00:00,OK
+Bronze (streaming),bronze/streaming/,1,0.01,2026-07-18 15:35:18+00:00,OK
+Silver (principal),silver/,15,78.66,2026-07-23 02:11:30+00:00,OK
+Gold (nucleo + enriquecida),gold/,9,1.7,2026-07-23 02:11:47+00:00,OK
