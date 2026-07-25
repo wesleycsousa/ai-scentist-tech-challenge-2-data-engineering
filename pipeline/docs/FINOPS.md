@@ -3,10 +3,16 @@
 ## Resumo Executivo
 
 Durante o desenvolvimento do pipeline, o custo real da infraestrutura foi
-monitorado via AWS Cost Explorer. Identificamos um custo de **$3,86** no mês
-corrente (Julho/2026, dado parcial), concentrado em EC2 Compute e componentes
-de rede (VPC), com causa raiz identificada e corrigida durante o próprio
-desenvolvimento — um exemplo real do ciclo FinOps aplicado na prática.
+monitorado via AWS Cost Explorer e AWS Budgets. Identificamos um custo
+acumulado de **$4,06** no mês corrente (Julho/2026, 24 dias decorridos),
+com projeção (forecast) de **$6,07** para o mês completo — concentrado
+majoritariamente em EC2 Compute e componentes de rede (VPC). A causa raiz
+foi identificada e corrigida durante o próprio desenvolvimento, e o sistema
+de Budget/Anomaly Detection da AWS **já sinalizou o problema automaticamente**
+("1 over budget", "1 cost anomaly detected") — evidência de que o
+monitoramento de custo funcionou na prática, não só em teoria.
+
+![Painel de Cost Summary e Cost Monitor da AWS](imagens/cost-explorer-summary.png)
 
 ---
 
@@ -31,16 +37,26 @@ considerável para o escopo do projeto.
 
 ## 2. Custo Real por Serviço (AWS Cost Explorer)
 
-Comparativo Junho/2026 vs. Julho/2026 (mês corrente, parcial):
+Custo acumulado no mês (Julho/2026, month-to-date):
 
-| Serviço | Junho | Julho (MTD) | Aumento |
-|---|---|---|---|
-| Amazon EC2 - Compute | $0,00 | $2,53 | +$2,53 |
-| Amazon Virtual Private Cloud | $0,00 | $1,10 | +$1,10 |
-| EC2 - Other (EBS, transferência) | $0,00 | $0,18 | +$0,18 |
-| AWS Glue | $0,00 | $0,05 | +$0,05 |
-| Amazon S3 | $0,0001 | $0,0033 | +$0,003 |
-| **Total** | **~$0,00** | **$3,86** | — |
+| Serviço | Custo (MTD) |
+|---|---|
+| EC2 - Instances | $2,66 |
+| Amazon VPC | $1,15 |
+| EC2 - Other (EBS, transferência) | $0,19 |
+| AWS Glue | $0,05 |
+| Amazon S3 | $0,00 |
+| Amazon CloudWatch | $0,00 |
+| **Total** | **$4,06** |
+
+Comparado a Junho/2026 (mês anterior, sem uso ativo do projeto): custo de
+**$0,00**, confirmando que 100% do gasto está associado à atividade deste
+projeto especificamente.
+
+**Forecast da AWS para o mês completo:** $6,07 — projeção baseada no ritmo
+de gasto observado nos primeiros 24 dias.
+
+![Comparativo de custo Junho vs Julho no Cost Explorer](imagens/cost-explorer-comparativo-jun-jul.png)
 
 ---
 
@@ -56,9 +72,9 @@ Metodologia aplicada — descarte sistemático de hipóteses antes de agir:
 
 **Causa raiz:** a instância EC2 hospedando o Kafka não foi parada manualmente
 entre sessões de desenvolvimento, acumulando horas de execução sem uso ativo.
-O custo de VPC ($1,10) é atribuído a componentes de rede associados ao tráfego
-e à própria existência da instância em execução prolongada (data transfer),
-não a um recurso de rede isolado mal configurado.
+O custo de VPC ($1,15) é atribuído a componentes de rede associados ao
+tráfego e à própria existência da instância em execução prolongada, não a
+um recurso de rede isolado mal configurado.
 
 ---
 
@@ -86,8 +102,11 @@ não a um recurso de rede isolado mal configurado.
 
 ## 6. Ciclo FinOps Aplicado (Informar → Otimizar → Operar)
 
-1. **Informar:** monitoramento via AWS Cost Explorer revelou aumento de $0 para
-   $3,86 no mês, com detalhamento por serviço
+1. **Informar:** monitoramento via AWS Cost Explorer e AWS Budgets revelou
+   aumento de $0 para $4,06 no mês, com detalhamento por serviço; o próprio
+   Cost Anomaly Detection da AWS sinalizou automaticamente ("1 cost anomaly
+   detected", impacto de $0,05) e o Budget configurado disparou o alerta
+   "1 over budget"
 2. **Otimizar:** investigação estruturada identificou a causa raiz (instância
    EC2 ociosa) e ação corretiva imediata (parar a instância)
 3. **Operar (próximo passo, não implementado neste projeto):** automação de
@@ -108,9 +127,11 @@ camadas:
 2. **Validação de qualidade fail-fast na Gold** — funciona como alerta ativo, interrompendo o pipeline antes de dados inconsistentes chegarem à camada de consumo. Validado na prática: identificou um bug real de duplicidade (falta de idempotência) durante o desenvolvimento
 3. **Relatório de saúde consolidado** (`monitoramento_pipeline.py`) — volume, contagem de arquivos e data da última execução por camada, sinalizando "ATENÇÃO" para camadas sem atualização recente
 
-Alertas em tempo real via CloudWatch Alarms foram avaliados e não
-implementados (item opcional do desafio) — mesma lógica de priorização de
-escopo aplicada em outras decisões do projeto.
+Alertas em tempo real via CloudWatch Alarms customizados foram avaliados e
+não implementados (item opcional do desafio) — mesma lógica de priorização
+de escopo aplicada em outras decisões do projeto. O alerta de Budget nativo
+(Seção 9) cobre parcialmente essa necessidade sem esforço de implementação
+adicional.
 
 ---
 
@@ -128,3 +149,16 @@ mesmo volume/arquitetura:
 
 Reforça a decisão por EC2 sob demanda (ligar apenas durante uso ativo) em vez
 de um serviço always-on gerenciado como Amazon MSK.
+
+---
+
+## 9. Alerta de Billing Configurado
+
+Como medida preventiva complementar à investigação reativa de custo (Seção 3),
+a conta possui um **AWS Budget** ativo, que sinalizou automaticamente o
+estouro do limite definido ("1 over budget") junto com uma detecção de
+anomalia de custo ("1 cost anomaly detected", impacto de $0,05 nos últimos
+90 dias) — evidenciando que o monitoramento de custo não é apenas
+documentado teoricamente, mas está ativo e funcionando na conta real.
+
+![Alerta de billing e anomalia de custo detectados](imagens/billing-alarm-configurado.png)
