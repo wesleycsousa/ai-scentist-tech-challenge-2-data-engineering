@@ -66,3 +66,26 @@ def upload_s3(caminho_local, s3_key):
     """Sobe um arquivo local pro S3, numa chave especifica."""
     s3_client.upload_file(caminho_local, S3_BUCKET, s3_key)
     logger.info(f"Upload OK: s3://{S3_BUCKET}/{s3_key}")
+
+def salvar_particionado_s3(df, prefixo_s3, pasta_local, coluna_particao, data_execucao):
+    """
+    Salva um DataFrame particionado por uma coluna (ex: 'ano'), remove essa
+    coluna do conteudo do arquivo (ja fica implicita no caminho da pasta -
+    evita erro de "duplicate columns" no Glue/Athena: bigint do arquivo vs
+    string da particao), limpa o prefixo antes de escrever (idempotencia),
+    e sobe cada particao pro S3.
+    """
+    limpar_prefixo_s3(prefixo_s3)
+
+    for valor_particao, grupo in df.groupby(coluna_particao):
+        grupo_sem_particao = grupo.drop(columns=[coluna_particao])
+
+        base_dir = f"{pasta_local}/{coluna_particao}={valor_particao}"
+        os.makedirs(base_dir, exist_ok=True)
+        path = f"{base_dir}/data_execucao={data_execucao}.parquet"
+        grupo_sem_particao.to_parquet(path, index=False)
+
+        s3_key = f"{prefixo_s3}{coluna_particao}={valor_particao}/data_execucao={data_execucao}.parquet"
+        upload_s3(path, s3_key)
+
+    logger.info(f"{prefixo_s3}: particionado e salvo com sucesso")

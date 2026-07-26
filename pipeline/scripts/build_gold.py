@@ -57,9 +57,15 @@ def salvar_gold_local(df, table_id):
     base_dir = f"pipeline/data/tmp/gold/{table_id}"
     os.makedirs(base_dir, exist_ok=True)
     for ano, grupo in df.groupby("ano"):
+        # remove a coluna "ano" do conteudo do arquivo - ela ja fica
+        # implicita no caminho da pasta (ano=2023/, ano=2024/), guardar
+        # ela tambem dentro do parquet causa conflito de schema no Glue/Athena
+        # ("duplicate columns": bigint do arquivo vs string da particao)
+        grupo_sem_particao = grupo.drop(columns=["ano"])
+
         path = f"{base_dir}/ano={ano}/data_execucao={DATA_EXECUCAO}.parquet"
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        grupo.to_parquet(path, index=False)
+        grupo_sem_particao.to_parquet(path, index=False)
         caminhos.append(path)
     return caminhos
 
